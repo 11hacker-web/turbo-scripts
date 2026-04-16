@@ -23,8 +23,7 @@ Keep everything minimal, readable, and practical.
 No unnecessary complexity, no heavy dependencies.
 # fosiout
 **F**ast **O**pen **S**ource **I**nstant **O**verride **U**nlimited **T**ethering
-
 This script bypasses carrier-imposed speed limits on mobile hotspots by automating TTL modifications.
-
-## Usage
-`sudo ./fosiout.sh`
+Simply run the following command to restore your full connection speed:
+```bash
+./fosiout.sh

@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turbo Scripts — Linux Automation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --bg2: #0e1117;
+    --bg3: #141820;
+    --surface: #1a1f2e;
+    --border: rgba(0,255,120,0.12);
+    --green: #00ff78;
+    --green2: #00cc60;
+    --green-dim: rgba(0,255,120,0.07);
+    --text: #e8f0e8;
+    --text-muted: #7a8a7a;
+    --text-dim: #4a5a4a;
+    --accent: #00ff78;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* SCANLINE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* ANIMATED GRID BG */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,120,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,120,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    animation: gridDrift 30s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes gridDrift {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(48px); }
+  }
+
+  /* PARTICLES */
+  .particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: particleFloat linear infinite;
+    opacity: 0;
+  }
+
+  @keyframes particleFloat {
+    0% { opacity: 0; transform: translateY(100vh) translateX(0); }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.3; }
+    100% { opacity: 0; transform: translateY(-100px) translateX(40px); }
+  }
+
+  /* NAVBAR */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,12,15,0.8);
+    backdrop-filter: blur(12px);
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--green);
+    letter-spacing: 0.05em;
+    text-decoration: none;
+  }
+
+  .nav-logo .prompt { color: var(--text-muted); }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    transition: color 0.2s;
+    text-transform: uppercase;
+  }
+
+  .nav-links a:hover { color: var(--green); }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 2rem 4rem;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(0,255,120,0.08) 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: glowPulse 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes glowPulse {
+    0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  }
+
+  .terminal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--green-dim);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 0.35rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--green);
+    letter-spacing: 0.06em;
+    margin-bottom: 2rem;
+    animation: fadeSlideDown 0.8s ease both;
+  }
+
+  .terminal-badge .dot {
+    width: 6px;
+    height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: blink 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  @keyframes fadeSlideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-title {
+    font-family: var(--mono);
+    font-size: clamp(3rem, 8vw, 7rem);
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    animation: fadeSlideUp 0.8s 0.2s ease both;
+    position: relative;
+  }
+
+  .hero-title .turbo {
+    color: var(--green);
+    display: inline-block;
+    position: relative;
+  }
+
+  .hero-title .turbo::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--green);
+    animation: lineExpand 1s 1s ease both;
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+
+  @keyframes lineExpand {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+
+  .hero-subtitle {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: var(--text-muted);
+    margin-bottom: 3rem;
+    max-width: 500px;
+    animation: fadeSlideUp 0.8s 0.4s ease both;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+  }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeSlideUp 0.8s 0.6s ease both;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--green);
+    color: #000;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 0.75rem 1.75rem;
+    border-radius: 4px;
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 0 20px rgba(0,255,120,0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 40px rgba(0,255,120,0.5);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    color: var(--green);
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.75rem 1.75rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .btn-secondary:hover {
+    background: var(--green-dim);
+    border-color: var(--green);
+  }
+
+  /* TERMINAL WINDOW */
+  .terminal-wrap {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    margin: 4rem auto;
+    padding: 0 2rem;
+    animation: fadeSlideUp 0.8s 0.8s ease both;
+  }
+
+  .terminal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0,255,120,0.05), 0 40px 80px rgba(0,0,0,0.6);
+  }
+
+  .terminal-bar {
+    background: var(--bg3);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .terminal-bar .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .terminal-bar .dot.red { background: #ff5f57; }
+  .terminal-bar .dot.yellow { background: #ffbd2e; }
+  .terminal-bar .dot.green { background: #28ca41; }
+  .terminal-bar .title {
+    flex: 1;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .terminal-body {
+    padding: 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    line-height: 2;
+    min-height: 220px;
+  }
+
+  .line { display: block; }
+  .line.cmd { color: var(--text); }
+  .line.output { color: var(--text-muted); }
+  .line.success { color: var(--green); }
+  .line.comment { color: var(--text-dim); }
+  .prompt-char { color: var(--green); }
+  .path { color: #7aa2f7; }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 1em;
+    background: var(--green);
+    vertical-align: text-bottom;
+    animation: blink 1s step-end infinite;
+  }
+
+  /* SECTION SHARED */
+  section {
+    position: relative;
+    z-index: 2;
+    padding: 6rem 2rem;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--green);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .section-title {
+    font-family: var(--mono);
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+    margin-bottom: 1rem;
+  }
+
+  .section-title span { color: var(--green); }
+
+  .section-desc {
+    color: var(--text-muted);
+    max-width: 480px;
+    font-size: 1rem;
+    font-weight: 300;
+  }
+
+  /* ABOUT */
+  .about {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+
+  @media (max-width: 768px) {
+    .about { grid-template-columns: 1fr; gap: 3rem; }
+    nav { padding: 1rem; }
+    .nav-links { gap: 1rem; }
+  }
+
+  .about-visual {
+    position: relative;
+  }
+
+  .hex-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .hex-cell {
+    aspect-ratio: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    transition: background 0.3s, border-color 0.3s, color 0.3s;
+    animation: hexReveal 0.5s ease both;
+  }
+
+  .hex-cell.active {
+    background: var(--green-dim);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  @keyframes hexReveal {
+    from { opacity: 0; transform: scale(0.5); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* FEATURES */
+  .features {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .features-header {
+    margin-bottom: 3rem;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .feature-card {
+    background: var(--bg2);
+    padding: 2rem;
+    position: relative;
+    transition: background 0.3s;
+    overflow: hidden;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .feature-card:hover::before { opacity: 1; }
+  .feature-card:hover { background: var(--bg3); }
+
+  .feature-card:not(:last-child) {
+    border-right: 1px solid var(--border);
+  }
+
+  .feature-icon {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    display: block;
+    color: var(--green);
+  }
+
+  .feature-title {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* CONTENT TYPES */
+  .content-section {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 3rem;
+  }
+
+  .content-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .content-item:hover {
+    transform: translateY(-4px);
+    border-color: rgba(0,255,120,0.3);
+  }
+
+  .content-item-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--green-dim);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+
+  .content-item-text h4 {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+  }
+
+  .content-item-text p {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 300;
+  }
+
+  /* PHILOSOPHY */
+  .philosophy {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .manifesto {
+    margin-top: 3rem;
+    border-left: 2px solid var(--green);
+    padding-left: 2rem;
+  }
+
+  .manifesto-line {
+    font-family: var(--mono);
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+    color: var(--text-dim);
+    line-height: 1.8;
+    display: block;
+    transition: color 0.3s;
+    cursor: default;
+  }
+
+  .manifesto-line:hover { color: var(--text); }
+  .manifesto-line .key { color: var(--green); }
+
+  /* STATS */
+  .stats-row {
+    position: relative;
+    z-index: 2;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2rem;
+  }
+
+  .stats-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 2rem;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: var(--mono);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--green);
+    display: block;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: var(--mono);
+  }
+
+  /* LICENSE & INFO */
+  .info-section {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+  }
+
+  @media (max-width: 768px) {
+    .info-section { grid-template-columns: 1fr; }
+    .about { grid-template-columns: 1fr; }
+  }
+
+  .info-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .info-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 80px; height: 80px;
+    background: radial-gradient(circle, rgba(0,255,120,0.06), transparent);
+    pointer-events: none;
+  }
+
+  .info-card h3 {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--green);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .info-card p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  .license-badge {
+    display: inline-block;
+    background: var(--green-dim);
+    border: 1px solid var(--border);
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 100px;
+    margin-top: 1rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* FOOTER */
+  footer {
+    position: relative;
+    z-index: 2;
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 2rem;
+    text-align: center;
+  }
+
+  .footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .footer-logo {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--green);
+    font-size: 0.9rem;
+  }
+
+  .footer-meta {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .footer-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    transition: color 0.2s;
+  }
+
+  .footer-link:hover { color: var(--green); }
+
+  /* SCROLL REVEAL */
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* GLITCH TEXT */
+  @keyframes glitch {
+    0%, 90%, 100% { transform: none; text-shadow: none; }
+    91% { transform: translateX(-2px); text-shadow: 2px 0 var(--green); }
+    93% { transform: translateX(2px); text-shadow: -2px 0 rgba(255,0,100,0.5); }
+    95% { transform: translateX(-1px); text-shadow: 1px 0 var(--green); }
+  }
+
+  .glitch { animation: glitch 5s ease-in-out infinite; }
+
+  /* TYPING ANIMATION */
+  .typed-text { overflow: hidden; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="particles" id="particles"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <span class="prompt">~/ </span>turbo-scripts
+  </a>
+  <ul class="nav-links">
+    <li><a href="#about">about</a></li>
+    <li><a href="#content">content</a></li>
+    <li><a href="#philosophy">philosophy</a></li>
+    <li><a href="https://github.com/11-hacker-lab/turbo-scripts" target="_blank">github ↗</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="terminal-badge">
+    <span class="dot"></span>
+    linux automation toolkit
+  </div>
+  <h1 class="hero-title glitch">
+    <span class="turbo">Turbo</span><br>Scripts
+  </h1>
+  <p class="hero-subtitle">
+    Simple everyday Linux scripts for real-world automation, fast and minimal.
+  </p>
+  <div class="hero-buttons">
+    <a href="https://github.com/11-hacker-lab/turbo-scripts" target="_blank" class="btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+      View on GitHub
+    </a>
+    <a href="#about" class="btn-secondary">
+      Learn more →
+    </a>
+  </div>
+</section>
+
+<!-- TERMINAL DEMO -->
+<div class="terminal-wrap reveal">
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+      <span class="title">bash — 80×24</span>
+    </div>
+    <div class="terminal-body" id="terminal-demo">
+      <span class="line comment"># turbo-scripts — minimal linux automation</span>
+      <span class="line cmd"><span class="prompt-char">❯</span> <span class="path">~/turbo-scripts</span> git clone https://github.com/11-hacker-lab/turbo-scripts</span>
+      <span class="line output">Cloning into 'turbo-scripts'...</span>
+      <span class="line output">remote: Enumerating objects: done.</span>
+      <span class="line success">✓ Repository cloned successfully</span>
+      <span class="line cmd"><span class="prompt-char">❯</span> <span class="path">~/turbo-scripts</span> ls -la scripts/</span>
+      <span class="line output">drwxr-xr-x  system-tweaks/</span>
+      <span class="line output">drwxr-xr-x  automation/</span>
+      <span class="line output">drwxr-xr-x  utilities/</span>
+      <span class="line cmd"><span class="prompt-char">❯</span> <span class="path">~/turbo-scripts</span> <span class="cursor"></span></span>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stats-inner">
+    <div>
+      <span class="stat-num" data-target="0">0</span>
+      <span class="stat-label">heavy deps</span>
+    </div>
+    <div>
+      <span class="stat-num" data-target="100">0</span>
+      <span class="stat-label">% shell scripts</span>
+    </div>
+    <div>
+      <span class="stat-num" data-target="1">0</span>
+      <span class="stat-label">author</span>
+    </div>
+    <div>
+      <span class="stat-num">GPLv3</span>
+      <span class="stat-label">license</span>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about">
+    <div>
+      <span class="section-label reveal">// about</span>
+      <h2 class="section-title reveal">What is<br><span>Turbo Scripts?</span></h2>
+      <p class="section-desc reveal">
+        A personal collection of small, practical shell utilities created for real-world Linux usage.
+        No bloat, no unnecessary complexity — just scripts that work.
+      </p>
+    </div>
+    <div class="about-visual reveal">
+      <div class="hex-grid" id="hex-grid"></div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section>
+  <div class="features">
+    <div class="features-header">
+      <span class="section-label reveal">// features</span>
+      <h2 class="section-title reveal">Built for the<br><span>terminal</span></h2>
+    </div>
+    <div class="cards-grid reveal">
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <div class="feature-title">Minimal & Fast</div>
+        <p class="feature-desc">No frameworks, no interpreters beyond bash. Pure shell scripts that run instantly.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📖</span>
+        <div class="feature-title">Readable Code</div>
+        <p class="feature-desc">Every script is written to be understood at a glance. Comments, clear naming, sane logic.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔧</span>
+        <div class="feature-title">Practical</div>
+        <p class="feature-desc">Solves real problems encountered daily on Linux. Not theoretical, not academic.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🎓</span>
+        <div class="feature-title">For Learning</div>
+        <p class="feature-desc">Useful as a reference for anyone learning Linux shell scripting from scratch.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTENT -->
+<section id="content">
+  <div class="content-section">
+    <span class="section-label reveal">// content</span>
+    <h2 class="section-title reveal">What's <span>inside</span></h2>
+    <p class="section-desc reveal">The repository contains various categories of automation tools.</p>
+    <div class="content-grid">
+      <div class="content-item reveal">
+        <div class="content-item-icon">#!</div>
+        <div class="content-item-text">
+          <h4>Shell Scripts</h4>
+          <p>Linux automation scripts for everyday tasks</p>
+        </div>
+      </div>
+      <div class="content-item reveal">
+        <div class="content-item-icon">⚙️</div>
+        <div class="content-item-text">
+          <h4>System Tweaks</h4>
+          <p>Configuration utilities and system settings helpers</p>
+        </div>
+      </div>
+      <div class="content-item reveal">
+        <div class="content-item-icon">▶</div>
+        <div class="content-item-text">
+          <h4>Terminal Utils</h4>
+          <p>Small terminal tools that speed up daily workflows</p>
+        </div>
+      </div>
+      <div class="content-item reveal">
+        <div class="content-item-icon">🔄</div>
+        <div class="content-item-text">
+          <h4>Helper Tools</h4>
+          <p>Miscellaneous helpers for common Linux operations</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PHILOSOPHY -->
+<section id="philosophy">
+  <div class="philosophy">
+    <span class="section-label reveal">// philosophy</span>
+    <h2 class="section-title reveal">The <span>mindset</span></h2>
+    <div class="manifesto reveal">
+      <span class="manifesto-line">Keep everything <span class="key">minimal</span>.</span>
+      <span class="manifesto-line">Write code that is <span class="key">readable</span>.</span>
+      <span class="manifesto-line">Build things that are <span class="key">practical</span>.</span>
+      <span class="manifesto-line">Avoid <span class="key">unnecessary complexity</span>.</span>
+      <span class="manifesto-line">Refuse <span class="key">heavy dependencies</span>.</span>
+    </div>
+  </div>
+</section>
+
+<!-- INFO -->
+<section>
+  <div class="info-section">
+    <div class="info-card reveal">
+      <h3>License</h3>
+      <p>
+        Turbo Scripts is open source and released under the GNU General Public License version 3.
+        You are free to use, modify, and distribute this software under the same license terms.
+      </p>
+      <span class="license-badge">GPL-3.0</span>
+    </div>
+    <div class="info-card reveal">
+      <h3>Author</h3>
+      <p>
+        Created and maintained by <strong style="color: var(--green); font-weight: 600;">11-hacker</strong>.
+        Built for personal use and continuous learning — shared with the Linux community.
+      </p>
+      <a href="https://github.com/11-hacker-lab" target="_blank" class="license-badge" style="text-decoration:none; display:inline-block; margin-top:1rem;">
+        @11-hacker ↗
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-logo">~/turbo-scripts</span>
+    <span class="footer-meta">GPL-3.0 · 11-hacker · Linux Automation</span>
+    <a href="https://github.com/11-hacker-lab/turbo-scripts" class="footer-link" target="_blank">github ↗</a>
+  </div>
+</footer>
+
+<script>
+  // Particles
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.animationDuration = (8 + Math.random() * 20) + 's';
+    p.style.animationDelay = (Math.random() * 20) + 's';
+    p.style.width = p.style.height = (Math.random() > 0.7 ? 3 : 2) + 'px';
+    container.appendChild(p);
+  }
+
+  // Hex grid animation
+  const hexData = ['sh','ls','cd','rm','cp','mv','cat','awk','sed','grep','chmod','sudo','apt','git','ssh','vim','man','ps','kill','top','df','du','ln','find','wc'];
+  const grid = document.getElementById('hex-grid');
+  hexData.forEach((label, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'hex-cell';
+    cell.textContent = label;
+    cell.style.animationDelay = (i * 0.05) + 's';
+    grid.appendChild(cell);
+  });
+
+  // Randomly activate hex cells
+  setInterval(() => {
+    const cells = grid.querySelectorAll('.hex-cell');
+    const idx = Math.floor(Math.random() * cells.length);
+    cells[idx].classList.add('active');
+    setTimeout(() => cells[idx].classList.remove('active'), 1200);
+  }, 300);
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) e.target.classList.add('visible');
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(r => obs.observe(r));
+
+  // Counter animation
+  const counters = document.querySelectorAll('[data-target]');
+  const counterObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const target = parseInt(e.target.dataset.target);
+        let current = 0;
+        const step = target / 40;
+        const timer = setInterval(() => {
+          current = Math.min(current + step, target);
+          e.target.textContent = Math.round(current) + (e.target.dataset.target === '100' ? '%' : '');
+          if (current >= target) clearInterval(timer);
+        }, 30);
+        counterObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  counters.forEach(c => counterObs.observe(c));
+</script>
+</body>
+</html>
